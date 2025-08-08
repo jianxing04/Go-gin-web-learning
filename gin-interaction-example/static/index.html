@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gin front-end and back-end interaction example</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        input { width: 70%; padding: 8px; margin-right: 10px; }
+        button { padding: 8px 15px; }
+        #result { margin-top: 20px; padding: 15px; background-color: #f0f0f0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <h1>Gin front-end and back-end interaction</h1>
+    <p>Enter anything in the input box below and then click the "Send to Backend" button.</p>
+
+    <div>
+        <input type="text" id="dataInput" placeholder="Enter the data here...">
+        <button id="sendButton">Send to Backend</button>
+    </div>
+
+    <h2>Response from the back end:</h2>
+    <pre id="result">(Wait for the response from the backend...)</pre>
+
+    <script>
+        const sendButton = document.getElementById('sendButton');
+        const dataInput = document.getElementById('dataInput');
+        const resultDiv = document.getElementById('result');
+
+        sendButton.addEventListener('click', async () => {
+            const userInput = dataInput.value;
+
+            const dataToSend = {
+                user_input: userInput
+            };
+
+            resultDiv.textContent = 'Data is being sent...';
+
+            try {
+                const response = await fetch('/api/process', {
+                    method: 'POST', 
+                    headers: {
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify(dataToSend) 
+                });
+                
+                const resultData = await response.json();
+
+                if (response.ok) {
+                    resultDiv.textContent = JSON.stringify(resultData, null, 2);
+                } else {
+                    resultDiv.textContent = 'Error: ' + resultData.error;
+                }
+
+            } catch (error) {
+                console.error('Request failed:', error);
+                resultDiv.textContent = 'The request failed. Please check whether the console and backend services are running.';
+            }
+        });
+    </script>
+
+</body>
+</html>
