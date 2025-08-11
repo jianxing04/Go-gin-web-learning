@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>员工管理示例（Gin + MySQL）</title>
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; max-width: 900px; margin: 30px auto; padding: 20px; }
+    h1 { margin-bottom: 8px; }
+    form { margin-bottom: 16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    input[type="text"], input[type="number"] { padding:8px; border:1px solid #ccc; border-radius:6px; }
+    button { padding:8px 12px; border-radius:6px; border: none; cursor:pointer; background:#2563eb; color:#fff; }
+    button.secondary { background:#6b7280; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { padding:8px; border:1px solid #e5e7eb; text-align:left; }
+    .actions button { margin-right:6px; }
+    .msg { margin-top:12px; color:#065f46; }
+  </style>
+</head>
+<body>
+  <h1>公司员工管理</h1>
+  <p>添加或编辑员工，然后在下方表格中管理。</p>
+
+  <form id="empForm">
+    <input type="hidden" id="empId" />
+    <input type="text" id="name" placeholder="姓名" required />
+    <input type="number" id="age" placeholder="年龄" min="0" />
+    <input type="text" id="email" placeholder="邮箱" />
+    <input type="text" id="dept" placeholder="部门" />
+    <button type="submit" id="submitBtn">添加</button>
+    <button type="button" id="cancelBtn" class="secondary" style="display:none">取消</button>
+  </form>
+
+  <div id="msg" class="msg"></div>
+
+  <table id="empTable">
+    <thead>
+      <tr>
+        <th>ID</th><th>姓名</th><th>年龄</th><th>邮箱</th><th>部门</th><th>操作</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const apiRoot = '/api/employees';
+    const form = document.getElementById('empForm');
+    const empIdInput = document.getElementById('empId');
+    const nameInput = document.getElementById('name');
+    const ageInput = document.getElementById('age');
+    const emailInput = document.getElementById('email');
+    const deptInput = document.getElementById('dept');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const msgDiv = document.getElementById('msg');
+    const tbody = document.querySelector('#empTable tbody');
+
+    async function loadEmployees() {
+      const res = await fetch(apiRoot + '/');
+      const data = await res.json();
+      tbody.innerHTML = '';
+      data.forEach(e => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${e.ID}</td>
+          <td>${escapeHtml(e.name)}</td>
+          <td>${e.age ?? ''}</td>
+          <td>${escapeHtml(e.email ?? '')}</td>
+          <td>${escapeHtml(e.dept ?? '')}</td>
+          <td class="actions">
+            <button onclick="startEdit(${e.ID})">编辑</button>
+            <button onclick="del(${e.ID})" class="secondary">删除</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(s){ return (s===null||s===undefined)?'':String(s).replace(/[&<>"]/g, (c)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+
+    async function createEmployee(payload) {
+      const res = await fetch(apiRoot + '/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw await res.json();
+      return res.json();
+    }
+    async function updateEmployee(id, payload) {
+      const res = await fetch(apiRoot + '/' + id, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw await res.json();
+      return res.json();
+    }
+    async function del(id) {
+      if (!confirm('确认删除 ID=' + id + ' ?')) return;
+      const res = await fetch(apiRoot + '/' + id, { method: 'DELETE' });
+      if (res.ok) {
+        showMsg('删除成功');
+        loadEmployees();
+      } else {
+        const err = await res.json();
+        showMsg('删除失败: ' + (err.error || JSON.stringify(err)));
+      }
+    }
+
+    function showMsg(text) {
+      msgDiv.textContent = text;
+      setTimeout(()=>{ msgDiv.textContent = ''; }, 3000);
+    }
+
+    async function startEdit(id) {
+      const res = await fetch(apiRoot + '/' + id);
+      if (!res.ok) { showMsg('无法获取员工'); return; }
+      const e = await res.json();
+      empIdInput.value = e.ID;
+      nameInput.value = e.name || '';
+      ageInput.value = e.age || '';
+      emailInput.value = e.email || '';
+      deptInput.value = e.dept || '';
+      submitBtn.textContent = '保存';
+      cancelBtn.style.display = 'inline-block';
+    }
+
+    cancelBtn.addEventListener('click', ()=> {
+      empIdInput.value = '';
+      form.reset();
+      submitBtn.textContent = '添加';
+      cancelBtn.style.display = 'none';
+    });
+
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const payload = {
+        name: nameInput.value.trim(),
+        age: ageInput.value ? Number(ageInput.value) : 0,
+        email: emailInput.value.trim(),
+        dept: deptInput.value.trim(),
+      };
+      try {
+        if (empIdInput.value) {
+          await updateEmployee(empIdInput.value, payload);
+          showMsg('更新成功');
+        } else {
+          await createEmployee(payload);
+          showMsg('添加成功');
+        }
+        form.reset();
+        empIdInput.value = '';
+        submitBtn.textContent = '添加';
+        cancelBtn.style.display = 'none';
+        loadEmployees();
+      } catch (err) {
+        console.error(err);
+        showMsg('操作失败: ' + (err.error || JSON.stringify(err)));
+      }
+    });
+
+    // 初始化
+    loadEmployees();
+  </script>
+</body>
+</html>
