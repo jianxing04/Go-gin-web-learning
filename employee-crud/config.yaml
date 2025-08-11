@@ -2,7 +2,7 @@ server:
   port: 8080
 
 database:
-  host: "127.0.0.1"
+  host: db
   port: 3306
   user: "root"
   password: "Wjx@Mhcjly04!"

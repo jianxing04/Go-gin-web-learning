@@ -44,7 +44,7 @@ func GetEmployees(c *gin.Context) {
 	c.JSON(http.StatusOK, employees)
 }
 
-func DetEmployeeByID(c *gin.Context) {
+func GetEmployeeByID(c *gin.Context) {
 	id := c.Param("id")
 	var emp models.Employee
 	if err := database.DB.First(&emp, id).Error; err != nil {

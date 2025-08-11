@@ -26,7 +26,7 @@ func main() {
 	{
 		api.POST("/", handlers.CreateEmployee)
 		api.GET("/", handlers.GetEmployees)
-		api.GET("/:id", handlers.DetEmployeeByID)
+		api.GET("/:id", handlers.GetEmployeeByID)
 		api.PUT("/:id", handlers.UpdateEmployee)
 		api.DELETE("/:id", handlers.DeleteEmployee)
 	}
