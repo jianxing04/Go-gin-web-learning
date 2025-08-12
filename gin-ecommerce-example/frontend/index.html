@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ecommerce CRUD</title>
+</head>
+<body>
+    <h1>商品管理</h1>
+    
+    <!-- 创建商品 -->
+    <h2>添加商品</h2>
+    <form id="createForm">
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="text" id="description" placeholder="Description" required>
+        <input type="number" id="price" placeholder="Price" required>
+        <button type="submit">添加</button>
+    </form>
+    
+    <!-- 更新商品 -->
+    <h2>更新商品</h2>
+    <form id="updateForm">
+        <input type="number" id="updateId" placeholder="ID" required>
+        <input type="text" id="updateName" placeholder="New Name">
+        <input type="text" id="updateDescription" placeholder="New Description">
+        <input type="number" id="updatePrice" placeholder="New Price">
+        <button type="submit">更新</button>
+    </form>
+    
+    <!-- 删除商品 -->
+    <h2>删除商品</h2>
+    <input type="number" id="deleteId" placeholder="ID" required>
+    <button onclick="deleteProduct()">删除</button>
+    
+    <!-- 查询所有商品 -->
+    <h2>所有商品</h2>
+    <button onclick="getAllProducts()">查询所有</button>
+    <ul id="productList"></ul>
+    
+    <!-- 搜索商品 -->
+    <h2>搜索商品</h2>
+    <input type="text" id="searchQuery" placeholder="Keyword" required>
+    <button onclick="searchProducts()">搜索</button>
+    <ul id="searchList"></ul>
+    
+    <script>
+        const API_URL = 'http://localhost:8080/api';
+
+        // 创建
+        document.getElementById('createForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('name').value,
+                description: document.getElementById('description').value,
+                price: parseFloat(document.getElementById('price').value)
+            };
+            await fetch(`${API_URL}/products`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            alert('添加成功');
+        });
+
+        // 更新
+        document.getElementById('updateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('updateId').value;
+            const data = {
+                name: document.getElementById('updateName').value,
+                description: document.getElementById('updateDescription').value,
+                price: parseFloat(document.getElementById('updatePrice').value)
+            };
+            await fetch(`${API_URL}/products/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            alert('更新成功');
+        });
+
+        // 删除
+        async function deleteProduct() {
+            const id = document.getElementById('deleteId').value;
+            await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+            alert('删除成功');
+        }
+
+        // 查询所有
+        async function getAllProducts() {
+            const res = await fetch(`${API_URL}/products`);
+            const products = await res.json();
+            const list = document.getElementById('productList');
+            list.innerHTML = '';
+            products.forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = `${p.id}: ${p.name} - ${p.price}`;
+                list.appendChild(li);
+            });
+        }
+
+        // 搜索
+        async function searchProducts() {
+            const query = document.getElementById('searchQuery').value;
+            const res = await fetch(`${API_URL}/search?q=${query}`);
+            const products = await res.json();
+            const list = document.getElementById('searchList');
+            list.innerHTML = '';
+            products.forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = `${p.id}: ${p.name} - ${p.price}`;
+                list.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
