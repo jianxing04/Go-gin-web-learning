@@ -2,11 +2,15 @@ services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      - "8081:8080"
+    # 修改 depends_on，等待 mysql 健康后再启动
     depends_on:
-      - mysql
-      - redis
-      - elasticsearch
+      mysql:
+        condition: service_healthy # 等待 mysql 健康检查成功
+      redis:
+        condition: service_started # 等待 redis 容器启动即可 (默认行为)
+      elasticsearch:
+        condition: service_started # 等待 elasticsearch 容器启动即可 (默认行为)
     environment:
       - SERVER_PORT=:8080
 
@@ -14,10 +18,17 @@ services:
     image: mysql:8.4
     container_name: mysql
     ports:
-      - "3306:3306"
+      - "3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root_password
       MYSQL_DATABASE: ecommerce
+    # 为 mysql 添加健康检查
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     volumes:
       - mysql_data:/var/lib/mysql
 
@@ -25,16 +36,16 @@ services:
     image: redis:7.4
     container_name: redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3  # Updated image
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
     container_name: elasticsearch
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "9201:9200"
+      - "9301:9300"
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
