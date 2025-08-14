@@ -1,0 +1,13 @@
+database:
+  user : root
+  password : wjxmhcjlyAzg04
+  host : localhost
+  port : 3306
+  database : Employee_data_management_system
+  charset : utf8mb4
+
+JWT:
+  secret : 1234567890abcdef
+
+server:
+  port : 8080

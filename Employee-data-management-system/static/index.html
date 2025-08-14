@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>员工管理系统</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+<div class="container">
+    <h1 class="mb-4">员工管理系统</h1>
+
+    <!-- 搜索 -->
+    <div class="mb-3">
+        <input id="searchName" class="form-control w-25 d-inline" placeholder="输入姓名搜索">
+        <button class="btn btn-primary" onclick="loadEmployees(1)">搜索</button>
+        <button class="btn btn-success float-end" onclick="showAddModal()">新增员工</button>
+    </div>
+
+    <!-- 员工表格 -->
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th><th>姓名</th><th>职位</th><th>薪资</th><th>入职日期</th><th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="employeeTable"></tbody>
+    </table>
+
+    <!-- 分页 -->
+    <nav>
+        <ul class="pagination" id="pagination"></ul>
+    </nav>
+</div>
+
+<!-- 模态框 -->
+<div class="modal fade" id="employeeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">新增员工</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="empId">
+                <div class="mb-2">
+                    <label>姓名</label>
+                    <input id="name" class="form-control">
+                </div>
+                <div class="mb-2">
+                    <label>职位</label>
+                    <input id="position" class="form-control">
+                </div>
+                <div class="mb-2">
+                    <label>薪资</label>
+                    <input id="salary" type="number" step="0.01" class="form-control">
+                </div>
+                <div class="mb-2">
+                    <label>入职日期</label>
+                    <input id="hire_date" type="date" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button class="btn btn-primary" onclick="saveEmployee()">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let currentPage = 1;
+let pageSize = 5;
+let total = 0;
+let modal = new bootstrap.Modal(document.getElementById('employeeModal'));
+
+async function loadEmployees(page) {
+    currentPage = page;
+    const name = document.getElementById("searchName").value;
+    let url = `/employees?page=${page}&page_size=${pageSize}`;
+    if (name) url += "&name=" + encodeURIComponent(name);
+    const res = await fetch(url);
+    const result = await res.json();
+    const data = result.data;
+    total = data.total;
+
+    const table = document.getElementById("employeeTable");
+    table.innerHTML = "";
+    data.list.forEach(emp => {
+        table.innerHTML += `
+            <tr>
+                <td>${emp.id}</td>
+                <td>${emp.name}</td>
+                <td>${emp.position}</td>
+                <td>￥${emp.salary}</td>
+                <td>${emp.hire_date.substring(0,10)}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="showEditModal(${emp.id}, '${emp.name}', '${emp.position}', ${emp.salary}, '${emp.hire_date.substring(0,10)}')">编辑</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${emp.id})">删除</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    renderPagination();
+}
+
+function renderPagination() {
+    const pageCount = Math.ceil(total / pageSize);
+    const pagination = document.getElementById("pagination");
+    pagination.innerHTML = "";
+    for (let i = 1; i <= pageCount; i++) {
+        pagination.innerHTML += `
+            <li class="page-item ${i === currentPage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="loadEmployees(${i})">${i}</a>
+            </li>
+        `;
+    }
+}
+
+function showAddModal() {
+    document.getElementById("modalTitle").innerText = "新增员工";
+    document.getElementById("empId").value = "";
+    document.getElementById("name").value = "";
+    document.getElementById("position").value = "";
+    document.getElementById("salary").value = "";
+    document.getElementById("hire_date").value = "";
+    modal.show();
+}
+
+function showEditModal(id, name, position, salary, hire_date) {
+    document.getElementById("modalTitle").innerText = "编辑员工";
+    document.getElementById("empId").value = id;
+    document.getElementById("name").value = name;
+    document.getElementById("position").value = position;
+    document.getElementById("salary").value = salary;
+    document.getElementById("hire_date").value = hire_date;
+    modal.show();
+}
+
+async function saveEmployee() {
+    const id = document.getElementById("empId").value;
+    const emp = {
+        name: document.getElementById("name").value,
+        position: document.getElementById("position").value,
+        salary: parseFloat(document.getElementById("salary").value),
+        hire_date: document.getElementById("hire_date").value
+    };
+    if (id) {
+        await fetch("/employees/" + id, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(emp)
+        });
+    } else {
+        await fetch("/employees", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(emp)
+        });
+    }
+    modal.hide();
+    loadEmployees(currentPage);
+}
+
+async function deleteEmployee(id) {
+    if (!confirm("确定删除该员工吗？")) return;
+    await fetch("/employees/" + id, { method: "DELETE" });
+    loadEmployees(currentPage);
+}
+
+loadEmployees(1);
+</script>
+</body>
+</html>
