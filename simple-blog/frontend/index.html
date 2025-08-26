@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>简易博客演示</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>简易博客演示</h1>
+  <form id="blogForm" enctype="multipart/form-data">
+    <textarea name="text" rows="3" cols="60" placeholder="写点什么..."></textarea><br>
+    上传图片: <input type="file" name="image"><br>
+    上传视频: <input type="file" name="video"><br>
+    <button type="submit">发布</button>
+  </form>
+  <hr>
+  <div id="blog-container"></div>
+  <div id="loading">下滑加载更多...</div>
+  <script src="script.js"></script>
+</body>
+</html>
